@@ -10,8 +10,13 @@
 
 # Orders Microservice
 
+## Dev
 
+1. Clone repository
+2. Install dependencies
+3. Create a file `.env` based on `env.template` variables
 
-```
-docker compose up -d
-```
+4. Execute ```docker compose up -d```
+5. Execute migrations with prisma `npx prisma migrate dev`
+6. Execute to run the application `pnpm run start:dev`
+
