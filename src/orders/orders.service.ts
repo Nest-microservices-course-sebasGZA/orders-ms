@@ -12,15 +12,15 @@ import { firstValueFrom } from 'rxjs';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderPaginationDto } from './dto/order-pagination';
 import { OrderChangeStatusDto } from './dto/order-change-status.dto';
-import { PRODUCTS_SERVICE } from '../config';
+import { NATS_SERVICE } from '../config';
 
 @Injectable()
 export class OrdersService extends PrismaClient implements OnModuleInit {
   private readonly logger = new Logger(OrdersService.name);
 
   constructor(
-    @Inject(PRODUCTS_SERVICE)
-    private readonly productsClient: ClientProxy,
+    @Inject(NATS_SERVICE)
+    private readonly client: ClientProxy,
   ) {
     super();
   }
@@ -154,13 +154,6 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
   }
 
   #validateProductsByIds(ids: number[]) {
-    return firstValueFrom(
-      this.productsClient.send(
-        {
-          cmd: 'validate_products',
-        },
-        ids,
-      ),
-    );
+    return firstValueFrom(this.client.send('validate_products', ids));
   }
 }
