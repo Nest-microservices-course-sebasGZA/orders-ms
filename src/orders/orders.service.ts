@@ -33,15 +33,7 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
   async create({ items }: CreateOrderDto) {
     try {
       const ids = items.map((item) => item.productId);
-      const products: any[] = await firstValueFrom(
-        this.productsClient.send(
-          {
-            cmd: 'validate_products',
-          },
-          ids,
-        ),
-      );
-
+      const products: any[] = await this.#validateProductsByIds(ids);
       const totalAmount: number = items.reduce((_, orderItem: OrderItem) => {
         const price: number = products.find(
           (product) => product.id === orderItem.productId,
@@ -82,10 +74,7 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
 
       return {
         ...order,
-        orderItem: order.orderItem.map((item) => ({
-          ...item,
-          name: products.find((product) => product.id === item.productId).name,
-        })),
+        orderItem: this.#transformOrderItems(products, order.orderItem),
       };
     } catch {
       throw new RpcException({
@@ -121,13 +110,27 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
       where: {
         id,
       },
+      include: {
+        orderItem: {
+          select: {
+            productId: true,
+            quantity: true,
+            price: true,
+          },
+        },
+      },
     });
     if (!order)
       throw new RpcException({
         status: HttpStatus.NOT_FOUND,
         message: `Order with id ${id} not found`,
       });
-    return order;
+    const productIds = order.orderItem.map((items) => items.productId);
+    const products: any[] = await this.#validateProductsByIds(productIds);
+    return {
+      ...order,
+      orderItem: this.#transformOrderItems(products, order.orderItem),
+    };
   }
 
   async changeStatus({ id, status }: OrderChangeStatusDto) {
@@ -139,5 +142,25 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
       },
       data: { status },
     });
+  }
+
+  #transformOrderItems(products: any[], orderItem: Partial<OrderItem>[]) {
+    return orderItem.map(({ productId, price, quantity }: OrderItem) => ({
+      productId,
+      price,
+      quantity,
+      name: products.find((product) => product.id === productId).name,
+    }));
+  }
+
+  #validateProductsByIds(ids: number[]) {
+    return firstValueFrom(
+      this.productsClient.send(
+        {
+          cmd: 'validate_products',
+        },
+        ids,
+      ),
+    );
   }
 }
