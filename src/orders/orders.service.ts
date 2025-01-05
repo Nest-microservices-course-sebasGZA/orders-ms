@@ -70,11 +70,23 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
           },
         },
         include: {
-          orderItem: true,
+          orderItem: {
+            select: {
+              price: true,
+              quantity: true,
+              productId: true,
+            },
+          },
         },
       });
 
-      return order;
+      return {
+        ...order,
+        orderItem: order.orderItem.map((item) => ({
+          ...item,
+          name: products.find((product) => product.id === item.productId).name,
+        })),
+      };
     } catch {
       throw new RpcException({
         sttus: HttpStatus.BAD_REQUEST,
