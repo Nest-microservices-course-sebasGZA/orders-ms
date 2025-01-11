@@ -13,6 +13,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderPaginationDto } from './dto/order-pagination';
 import { OrderChangeStatusDto } from './dto/order-change-status.dto';
 import { NATS_SERVICE } from '../config';
+import { IOrdersWithProducts } from './interfaces/order-with-products.interface';
 
 @Injectable()
 export class OrdersService extends PrismaClient implements OnModuleInit {
@@ -72,16 +73,34 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
         },
       });
 
-      return {
+      const orderResponse = {
         ...order,
         orderItem: this.#transformOrderItems(products, order.orderItem),
       };
+
+      await this.#createPaymentSession(orderResponse);
+      return orderResponse;
     } catch {
       throw new RpcException({
         sttus: HttpStatus.BAD_REQUEST,
         message: 'Chech logs',
       });
     }
+  }
+
+  async #createPaymentSession({ id, orderItem }: IOrdersWithProducts) {
+    const paymentSession = await firstValueFrom(
+      this.client.send('create.payment.session', {
+        orderId: id,
+        currency: 'usd',
+        items: orderItem.map(({ name, price, quantity }) => ({
+          name,
+          price,
+          quantity,
+        })),
+      }),
+    );
+    return paymentSession;
   }
 
   async findAll(paginationDto: OrderPaginationDto) {
