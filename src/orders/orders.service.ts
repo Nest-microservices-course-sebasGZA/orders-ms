@@ -78,12 +78,12 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
         orderItem: this.#transformOrderItems(products, order.orderItem),
       };
 
-      await this.#createPaymentSession(orderResponse);
-      return orderResponse;
-    } catch {
+      const paymentSession = await this.#createPaymentSession(orderResponse);
+      return { ...orderResponse, paymentSession };
+    } catch (error) {
       throw new RpcException({
         sttus: HttpStatus.BAD_REQUEST,
-        message: 'Chech logs',
+        message: error.message,
       });
     }
   }
