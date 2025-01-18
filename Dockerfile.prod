@@ -21,10 +21,9 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 
 COPY . .
 
+RUN npm install -g pnpm@9.0.0
 RUN npx prisma migrate deploy
 RUN npx prisma generate
-
-RUN npm install -g pnpm@9.0.0
 RUN pnpm run build
 
 RUN pnpm install --prod --frozen-lockfile
