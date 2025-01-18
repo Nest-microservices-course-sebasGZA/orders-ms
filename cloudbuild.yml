@@ -13,7 +13,8 @@ steps:
       'push',
       'us-west2-docker.pkg.dev/custom-woodland-448200-m5/store-microservices/orders-ms',
     ]
-
+options:
+  logging: CLOUD_LOGGING_ONLY
 availableSecrets:
   secretManager:
   - versionName: projects/817148123804/secrets/orders_database_url/versions/1
